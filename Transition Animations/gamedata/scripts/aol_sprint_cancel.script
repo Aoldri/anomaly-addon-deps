@@ -1,0 +1,34 @@
+-- The idea is to stop the walk2sprint animation if the player stops sprinting during the animation
+
+-- Use my transition animations script as 'truth' for currently playing animation
+-- Likely to break if multiple scripts are using actor_on_hud_animation_play, but should be good enough for transition animations specifically
+local current_animation = ""
+local stop_animation = false
+
+aol_anim_transitions_actor_on_hud_animation_play = aol_anim_transitions.actor_on_hud_animation_play
+function aol_anim_transitions.actor_on_hud_animation_play(anm_table, item)
+    local prev_name = anm_table.anm_name
+
+    aol_anim_transitions_actor_on_hud_animation_play(anm_table, item)
+    
+    -- Restore original animation (probably idle) if previous animation was cancelled
+    -- This should prevent sprint2walk from playing if its counterpart walk2sprint was cancelled
+    if stop_animation and (current_animation == "anm_sprint2walk")then
+        anm_table.anm_name = prev_name
+        stop_animation = false
+    end
+    
+    current_animation = anm_table.anm_name
+end
+
+-- Detect if the player is not sprinting during the walk2sprint animation
+function actor_on_movement_changed(num)
+    if (not IsMoveState("mcSprint") and (current_animation == "anm_walk2sprint")) then
+        stop_animation = true
+        game.stop_hud_motion()
+    end
+end
+
+function on_game_start()
+	RegisterScriptCallback("actor_on_movement_changed",actor_on_movement_changed)
+end 
