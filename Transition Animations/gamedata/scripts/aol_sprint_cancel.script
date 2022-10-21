@@ -5,25 +5,40 @@
 local current_animation = ""
 local stop_animation = false
 
+-- Slightly cleaner string equivalence check that also checks for _empty counterparts
+function isAnimationEqualTo(anim_name)
+    if current_animation == anim_name then
+        return true
+    elseif current_animation == anim_name .. "_empty" then
+        return true
+    end
+    return false
+end
+
 aol_anim_transitions_actor_on_hud_animation_play = aol_anim_transitions.actor_on_hud_animation_play
 function aol_anim_transitions.actor_on_hud_animation_play(anm_table, item)
     local prev_name = anm_table.anm_name
-
     aol_anim_transitions_actor_on_hud_animation_play(anm_table, item)
-    
     -- Restore original animation (probably idle) if previous animation was cancelled
     -- This should prevent sprint2walk from playing if its counterpart walk2sprint was cancelled
-    if stop_animation and (current_animation == "anm_sprint2walk")then
-        anm_table.anm_name = prev_name
+    if stop_animation then
         stop_animation = false
+        if (isAnimationEqualTo("anm_walk2sprint") or isAnimationEqualTo("anm_sprint2walk")) then
+            anm_table.anm_name = prev_name
+        end
     end
-    
     current_animation = anm_table.anm_name
 end
 
 -- Detect if the player is not sprinting during the walk2sprint animation
+-- Firebreath: added the elseif in because sometimes the player stops sprint animation 
+--             when interrupted by small obstacles like stairs
 function actor_on_movement_changed(num)
-    if (not IsMoveState("mcSprint") and (current_animation == "anm_walk2sprint")) then
+    if stop_animation then return end
+    if (not IsMoveState("mcSprint") and isAnimationEqualTo("anm_walk2sprint")) then
+        stop_animation = true
+        game.stop_hud_motion()
+    elseif (IsMoveState("mcSprint") and isAnimationEqualTo("anm_sprint2walk")) then
         stop_animation = true
         game.stop_hud_motion()
     end
