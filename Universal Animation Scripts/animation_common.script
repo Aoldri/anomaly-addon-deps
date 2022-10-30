@@ -1,0 +1,75 @@
+-- Might want to extend this to track flags based on IDs since detectors have animations too
+-- Likely overkill unless someone implements custom anims for them
+local FLAGS = {
+    SHOTGUN_PUMP = 1,
+}
+
+local active_flags = {}
+
+function mutate_anim(anm_table, new_anm, section)
+    local has_custom_anm = SYS_GetParam(0, section, new_anm)
+    if has_custom_anm then
+        active_flags[FLAGS.SHOTGUN_PUMP] = true
+        anm_table.anm_name = new_anm
+
+        return true
+    end
+    return false
+end
+
+function get_sound_from_anm(anm_name) -- TODO: allow sound volume to be defined in config
+    return anm_name:gsub("anm_", "scripted_snd_")
+end
+
+-- Probably worth adding an ordered list of functions with conditions that can mutate anm_table
+-- and use this script as source of truth for about-to-be-played animations since callback order is random between scripts
+function actor_on_hud_animation_play(anm_table, item)
+	if not item then return end
+    local section = item:section()
+
+    -- Animation: Append animation name with '_empty' if weapon is empty and has valid anim for it
+    if item.get_ammo_in_magazine then
+        local ammo = item:get_ammo_in_magazine()
+        -- check if weapon is empty and is not playing an _empty animation
+        if ammo == 0 and not string.find(anm_table.anm_name, "_empty") then
+            -- check if anim is defined in config
+            local anm_empty = anm_table.anm_name .. "_empty"
+            mutate_anim(anm_table, anm_empty, section)
+            active_flags[FLAGS.SHOTGUN_PUMP] = true
+        end
+    end
+
+    -- Animation: Prepend with _pump if performing empty reload
+    if active_flags[FLAGS.SHOTGUN_PUMP] then
+        if anm_table.anm_name == "anm_close" then
+            mutate_anim(anm_table, "anm_close_pump", section)
+
+            -- Clear flag
+            active_flags[FLAGS.SHOTGUN_PUMP] = nil
+        end
+    end
+
+    -- Animation (No Mutation): Clear all flags if holstering weapon
+    if anm_table.anm_name == "anm_hide" or anm_table.anm_name == "anm_hide_empty" then
+        active_flags = {}
+    end
+
+    -- Sound: Check if weapon has a valid scripted sound in config
+    local anm_name = anm_table.anm_name
+
+    local snd_name = get_sound_from_anm(anm_name)
+
+	local snd_path = SYS_GetParam(0, section, snd_name)
+
+    if not snd_path then return end
+
+    -- Play sound
+    local snd_obj = xr_sound.get_safe_sound_object( snd_path )
+	if not snd_obj then return end
+
+    snd_obj:play_no_feedback(db.actor, sound_object.s2d, 0, vector(), 1.0, 1.0)
+end
+
+function on_game_start()
+	RegisterScriptCallback("actor_on_hud_animation_play",actor_on_hud_animation_play)
+end 
