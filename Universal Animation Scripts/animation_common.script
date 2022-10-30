@@ -7,7 +7,7 @@ local FLAGS = {
 local active_flags = {}
 
 function mutate_anim(anm_table, new_anm, section)
-    local has_custom_anm = SYS_GetParam(0, section, new_anm)
+    local has_custom_anm = SYS_GetParam(0, section .. "_hud", new_anm)
     if has_custom_anm then
         active_flags[FLAGS.SHOTGUN_PUMP] = true
         anm_table.anm_name = new_anm
@@ -47,6 +47,24 @@ function actor_on_hud_animation_play(anm_table, item)
             -- Clear flag
             active_flags[FLAGS.SHOTGUN_PUMP] = nil
         end
+    end
+
+    -- Animation: Randomly select between variants of the same animation
+    local variants = {anm_table.anm_name}
+    local i = 2
+    while (true) do
+        local anm_variant = anm_table.anm_name .. "_variant" .. (i-1)
+        local has_custom_anm = SYS_GetParam(0, section .. "_hud", anm_variant)
+        if has_custom_anm then
+            variants[i] = anm_variant
+        else
+            break
+        end
+        i = i + 1
+    end
+    if #variants > 1 then
+        local rand_i = random_number(1, #variants)
+        mutate_anim(anm_table, variants[rand_i], section)
     end
 
     -- Animation (No Mutation): Clear all flags if holstering weapon
