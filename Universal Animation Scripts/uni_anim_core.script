@@ -1,0 +1,81 @@
+local common = animation_common
+
+-- Flags
+common.add_flag("SHOTGUN_PUMP")
+
+-------------------------------------------------
+-- Animation Mutators
+-------------------------------------------------
+-- Animation: Append with '_jammed' if weapon misfires
+local function anm_jammed(anm_table, item)
+    local section = item:section()
+    local is_jammed = false
+    if arti_jamming then
+        if arti_jamming.get_jammed(item:id()) then
+            is_jammed = true
+        end
+    else
+        if item.cast_Weapon then
+            local is_jammed = item:cast_Weapon():IsMisfire()
+            if is_jammed then
+                is_jammed = true
+            end
+        end
+    end
+    if is_jammed then
+        local anm_jammed = anm_table.anm_name .. "_jammed"
+        common.mutate_anim(anm_table, anm_jammed, section)
+    end
+end
+common.add_anim_mutator(anm_jammed, 1)
+
+-- Animation: Append animation name with '_empty' if weapon is empty and has valid anim for it
+local function anm_empty(anm_table, item)
+    local section = item:section()
+    if item.get_ammo_in_magazine then
+        local ammo = item:get_ammo_in_magazine()
+        -- check if weapon is empty and is not playing an _empty animation
+        if ammo == 0 and not string.find(anm_table.anm_name, "_empty") then
+            -- check if anim is defined in config
+            local anm_empty = anm_table.anm_name .. "_empty"
+            common.mutate_anim(anm_table, anm_empty, section)
+            common.set_flag("SHOTGUN_PUMP")
+        end
+    end
+end
+common.add_anim_mutator(anm_empty, 2)
+
+-- Animation: Prepend with _pump if performing empty reload
+local function anm_pump(anm_table, item)
+   local section = item:section()
+    if common.get_flag("SHOTGUN_PUMP") then
+        if anm_table.anm_name == "anm_close" then
+            common.mutate_anim(anm_table, "anm_close_pump", section)
+
+            -- Clear flag
+            common.remove_flag("SHOTGUN_PUMP")
+        end
+    end
+end
+common.add_anim_mutator(anm_pump, 3)
+
+-- Animation: Randomly select between variants of the same animation
+local function anm_variants(anm_table, item)
+    local section = item:section()
+    local variants = {anm_table.anm_name}
+    local i = 2
+    while (true) do
+        local anm_variant = anm_table.anm_name .. "_variant" .. (i-1)
+        if common.has_animation(section, anm_variant) then
+            variants[i] = anm_variant
+        else
+            break
+        end
+        i = i + 1
+    end
+    if #variants > 1 then
+        local rand_i = random_number(1, #variants)
+        common.mutate_anim(anm_table, variants[rand_i], section)
+    end
+ end
+ common.add_anim_mutator(anm_variants, 4)

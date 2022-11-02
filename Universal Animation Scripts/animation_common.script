@@ -1,13 +1,31 @@
 -- Might want to extend this to track flags based on IDs since detectors have animations too
 -- Likely overkill unless someone implements custom anims for them
-local FLAGS = {
-    SHOTGUN_PUMP = 1,
-}
+FLAGS = {}
 
 local active_flags = {}
 
+-- Export: Flags
+function get_flag(flag)
+    return active_flags[flag]
+end
+
+function set_flag(flag)
+    active_flags[flag] = true
+end
+
+function remove_flag(flag)
+    active_flags[flag] = nil
+end
+
+function add_flag(flag)
+    -- Exit early if it already exists
+    if FLAGS[flag] then return end
+    FLAGS[flag] = #FLAGS
+end
+
 local anim_mutators = {}
 
+-- Export: Animation Mutators
 function add_anim_mutator(functor, priority)
     -- Add mutator func to list of mutators
     table.insert(anim_mutators, {functor=functor, priority=priority})
@@ -23,9 +41,7 @@ end
 
 function mutate_anim(anm_table, new_anm, section)
     if has_animation(section, new_anm) then
-        active_flags[FLAGS.SHOTGUN_PUMP] = true
         anm_table.anm_name = new_anm
-
         return true
     end
     return false
@@ -34,83 +50,6 @@ end
 function get_sound_from_anm(anm_name) -- TODO: allow sound volume to be defined in config
     return anm_name:gsub("anm_", "scripted_snd_")
 end
-
--------------------------------------------------
--- Animation Mutators
--------------------------------------------------
-local function anm_jammed(anm_table, item)
-    -- Animation: Append with '_jammed' if weapon misfires
-    local section = item:section()
-    local is_jammed = false
-    if arti_jamming then
-        if arti_jamming.get_jammed(item:id()) then
-            is_jammed = true
-        end
-    else
-        if item.cast_Weapon then
-            local is_jammed = item:cast_Weapon():IsMisfire()
-            if is_jammed then
-                is_jammed = true
-            end
-        end
-    end
-    if is_jammed then
-        local anm_jammed = anm_table.anm_name .. "_jammed"
-        mutate_anim(anm_table, anm_jammed, section)
-    end
-end
-add_anim_mutator(anm_jammed, 1)
-
-local function anm_empty(anm_table, item)
-    -- Animation: Append animation name with '_empty' if weapon is empty and has valid anim for it
-    local section = item:section()
-    if item.get_ammo_in_magazine then
-        local ammo = item:get_ammo_in_magazine()
-        -- check if weapon is empty and is not playing an _empty animation
-        if ammo == 0 and not string.find(anm_table.anm_name, "_empty") then
-            -- check if anim is defined in config
-            local anm_empty = anm_table.anm_name .. "_empty"
-            mutate_anim(anm_table, anm_empty, section)
-            active_flags[FLAGS.SHOTGUN_PUMP] = true
-        end
-    end
-end
-add_anim_mutator(anm_empty, 2)
-
-local function anm_pump(anm_table, item)
-   -- Animation: Prepend with _pump if performing empty reload
-   local section = item:section()
-    if active_flags[FLAGS.SHOTGUN_PUMP] then
-        if anm_table.anm_name == "anm_close" then
-            mutate_anim(anm_table, "anm_close_pump", section)
-
-            -- Clear flag
-            active_flags[FLAGS.SHOTGUN_PUMP] = nil
-        end
-    end
-end
-add_anim_mutator(anm_pump, 3)
-
-local function anm_variants(anm_table, item)
-    -- Animation: Randomly select between variants of the same animation
-    local section = item:section()
-    local variants = {anm_table.anm_name}
-    local i = 2
-    while (true) do
-        local anm_variant = anm_table.anm_name .. "_variant" .. (i-1)
-        if has_animation(section, anm_variant) then
-            variants[i] = anm_variant
-        else
-            break
-        end
-        i = i + 1
-    end
-    if #variants > 1 then
-        local rand_i = random_number(1, #variants)
-        mutate_anim(anm_table, variants[rand_i], section)
-    end
- end
- add_anim_mutator(anm_variants, 4)
 
 -- Probably worth adding an ordered list of functions with conditions that can mutate anm_table
 -- and use this script as source of truth for about-to-be-played animations since callback order is random between scripts
