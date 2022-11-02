@@ -6,6 +6,16 @@ local FLAGS = {
 
 local active_flags = {}
 
+local anim_mutators = {}
+
+function add_anim_mutator(functor, priority)
+    -- Add mutator func to list of mutators
+    table.insert(anim_mutators, {functor=functor, priority=priority})
+    
+    -- Sort anim_mutators again
+    table.sort(anim_mutators, function(a,b) return a.priority < b.priority end)
+end
+
 function has_animation(section, anm)
     local hud_section = ini_sys:r_string_ex(section,"hud")
     return SYS_GetParam(0, hud_section, anm)
@@ -25,13 +35,12 @@ function get_sound_from_anm(anm_name) -- TODO: allow sound volume to be defined 
     return anm_name:gsub("anm_", "scripted_snd_")
 end
 
--- Probably worth adding an ordered list of functions with conditions that can mutate anm_table
--- and use this script as source of truth for about-to-be-played animations since callback order is random between scripts
-function actor_on_hud_animation_play(anm_table, item)
-	if not item then return end
-    local section = item:section()
-
+-------------------------------------------------
+-- Animation Mutators
+-------------------------------------------------
+local function anm_jammed(anm_table, item)
     -- Animation: Append with '_jammed' if weapon misfires
+    local section = item:section()
     local is_jammed = false
     if arti_jamming then
         if arti_jamming.get_jammed(item:id()) then
@@ -49,8 +58,12 @@ function actor_on_hud_animation_play(anm_table, item)
         local anm_jammed = anm_table.anm_name .. "_jammed"
         mutate_anim(anm_table, anm_jammed, section)
     end
+end
+add_anim_mutator(anm_jammed, 1)
 
+local function anm_empty(anm_table, item)
     -- Animation: Append animation name with '_empty' if weapon is empty and has valid anim for it
+    local section = item:section()
     if item.get_ammo_in_magazine then
         local ammo = item:get_ammo_in_magazine()
         -- check if weapon is empty and is not playing an _empty animation
@@ -61,8 +74,12 @@ function actor_on_hud_animation_play(anm_table, item)
             active_flags[FLAGS.SHOTGUN_PUMP] = true
         end
     end
+end
+add_anim_mutator(anm_empty, 2)
 
-    -- Animation: Prepend with _pump if performing empty reload
+local function anm_pump(anm_table, item)
+   -- Animation: Prepend with _pump if performing empty reload
+   local section = item:section()
     if active_flags[FLAGS.SHOTGUN_PUMP] then
         if anm_table.anm_name == "anm_close" then
             mutate_anim(anm_table, "anm_close_pump", section)
@@ -71,8 +88,12 @@ function actor_on_hud_animation_play(anm_table, item)
             active_flags[FLAGS.SHOTGUN_PUMP] = nil
         end
     end
+end
+add_anim_mutator(anm_pump, 3)
 
+local function anm_variants(anm_table, item)
     -- Animation: Randomly select between variants of the same animation
+    local section = item:section()
     local variants = {anm_table.anm_name}
     local i = 2
     while (true) do
@@ -87,6 +108,19 @@ function actor_on_hud_animation_play(anm_table, item)
     if #variants > 1 then
         local rand_i = random_number(1, #variants)
         mutate_anim(anm_table, variants[rand_i], section)
+    end
+ end
+ add_anim_mutator(anm_variants, 4)
+
+-- Probably worth adding an ordered list of functions with conditions that can mutate anm_table
+-- and use this script as source of truth for about-to-be-played animations since callback order is random between scripts
+function actor_on_hud_animation_play(anm_table, item)
+	if not item then return end
+    local section = item:section()
+
+    -- Execute each mutator functor in turn, ordered by priority
+    for i, mutator in ipairs(anim_mutators) do
+        mutator.functor(anm_table, item)
     end
 
     -- Animation (No Mutation): Clear all flags if holstering weapon
