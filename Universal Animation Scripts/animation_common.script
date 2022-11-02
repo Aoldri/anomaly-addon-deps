@@ -31,6 +31,25 @@ function actor_on_hud_animation_play(anm_table, item)
 	if not item then return end
     local section = item:section()
 
+    -- Animation: Append with '_jammed' if weapon misfires
+    local is_jammed = false
+    if arti_jamming then
+        if arti_jamming.get_jammed(item:id()) then
+            is_jammed = true
+        end
+    else
+        if item.cast_Weapon then
+            local is_jammed = item:cast_Weapon():IsMisfire()
+            if is_jammed then
+                is_jammed = true
+            end
+        end
+    end
+    if is_jammed then
+        local anm_jammed = anm_table.anm_name .. "_jammed"
+        mutate_anim(anm_table, anm_jammed, section)
+    end
+
     -- Animation: Append animation name with '_empty' if weapon is empty and has valid anim for it
     if item.get_ammo_in_magazine then
         local ammo = item:get_ammo_in_magazine()
