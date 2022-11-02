@@ -6,9 +6,13 @@ local FLAGS = {
 
 local active_flags = {}
 
+function has_animation(section, anm)
+    local hud_section = ini_sys:r_string_ex(section,"hud")
+    return SYS_GetParam(0, hud_section, anm)
+end
+
 function mutate_anim(anm_table, new_anm, section)
-    local has_custom_anm = SYS_GetParam(0, section .. "_hud", new_anm)
-    if has_custom_anm then
+    if has_animation(section, new_anm) then
         active_flags[FLAGS.SHOTGUN_PUMP] = true
         anm_table.anm_name = new_anm
 
@@ -54,8 +58,7 @@ function actor_on_hud_animation_play(anm_table, item)
     local i = 2
     while (true) do
         local anm_variant = anm_table.anm_name .. "_variant" .. (i-1)
-        local has_custom_anm = SYS_GetParam(0, section .. "_hud", anm_variant)
-        if has_custom_anm then
+        if has_animation(section, anm_variant) then
             variants[i] = anm_variant
         else
             break
