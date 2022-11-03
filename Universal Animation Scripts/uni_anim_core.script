@@ -77,5 +77,5 @@ local function anm_variants(anm_table, item)
         local rand_i = random_number(1, #variants)
         common.mutate_anim(anm_table, variants[rand_i], section)
     end
- end
- common.add_anim_mutator(anm_variants, 4)
+end
+common.add_anim_mutator(anm_variants, 4)
