@@ -15,10 +15,10 @@ function isAnimationEqualTo(anim_name)
     return false
 end
 
-aol_anim_transitions_actor_on_hud_animation_play = aol_anim_transitions.actor_on_hud_animation_play
-function aol_anim_transitions.actor_on_hud_animation_play(anm_table, item)
+aol_anim_transitions_anm_transitions = aol_anim_transitions.anm_transitions
+function aol_anim_transitions.anm_transitions(anm_table, item)
     local prev_name = anm_table.anm_name
-    aol_anim_transitions_actor_on_hud_animation_play(anm_table, item)
+    aol_anim_transitions_anm_transitions(anm_table, item)
     -- Restore original animation (probably idle) if previous animation was cancelled
     -- This should prevent sprint2walk from playing if its counterpart walk2sprint was cancelled
     if stop_animation then
