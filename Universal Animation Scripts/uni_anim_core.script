@@ -33,7 +33,7 @@ common.add_anim_mutator(anm_jammed, 1)
 -- Animation: Append animation name with '_empty' if weapon is empty and has valid anim for it
 local function anm_empty(anm_table, item)
     local section = item:section()
-    if item.get_ammo_in_magazine then
+    if IsWeapon(item) and item.get_ammo_in_magazine then
         local ammo = item:get_ammo_in_magazine()
         -- check if weapon is empty and is not playing an _empty animation
         if ammo == 0 and not string.find(anm_table.anm_name, "_empty") then
