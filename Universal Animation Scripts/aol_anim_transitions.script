@@ -149,5 +149,5 @@ function anm_transitions(anm_table, item)
 end
 
 function on_game_start()
-	common.add_anim_mutator(anm_transitions, 0.5)
+	common.add_anim_mutator(anm_transitions, 999)
 end 
