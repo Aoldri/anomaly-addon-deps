@@ -18,10 +18,7 @@ local function anm_jammed(anm_table, item)
         local wpn = item:cast_Weapon()
         if not wpn then return end
         
-        local is_jammed = item:cast_Weapon():IsMisfire()
-        if is_jammed then
-            is_jammed = true
-        end
+        is_jammed = item:cast_Weapon():IsMisfire()
     end
     if is_jammed then
         local anm_jammed = anm_table.anm_name .. "_jammed"
