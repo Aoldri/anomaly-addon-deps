@@ -5,11 +5,9 @@
 local current_animation = ""
 local stop_animation = false
 
--- Slightly cleaner string equivalence check that also checks for _empty counterparts
+-- Slightly cleaner string equivalence check which should ignore variants like _empty or _jammed
 function isAnimationEqualTo(anim_name)
-    if current_animation == anim_name then
-        return true
-    elseif current_animation == anim_name .. "_empty" then
+    if current_animation:match(anim_name) then
         return true
     end
     return false
