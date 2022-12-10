@@ -21,6 +21,30 @@ local function anm_empty(anm_table, item)
 end
 common.add_anim_mutator(anm_empty, 1)
 
+-- Animation: Append with  '_alt' is weapon is in grenade launcher or alt mode
+local function anm_alt(anm_table, item)
+    local section = item:section()
+    if item:weapon_in_grenade_mode() then
+       common.mutate_anim(anm_table, "_alt", section)
+    end
+end
+common.add_anim_mutator(anm_alt, 1.1)
+
+-- Animation: Append with  '_aim' is player is aiming down sights
+local function actor_on_weapon_zoom_in(obj)
+    common.set_flag("AIM_MODE")
+end
+local function actor_on_weapon_zoom_out(obj)
+    common.remove_flag("AIM_MODE")
+end
+local function anm_ads(anm_table, item)
+    local section = item:section()
+    if common.get_flag("AIM_MODE") then
+       common.mutate_anim(anm_table, "_aim", section)
+    end
+end
+common.add_anim_mutator(anm_ads, 1.2)
+
 -- Animation: Append with '_jammed' if weapon misfires (vanilla) or fails to eject (WPO)
 --            Append with '_superjammed' if magazine needs to be removed before unjam (WPO)
 local function anm_jammed(anm_table, item)
@@ -87,3 +111,11 @@ local function anm_variants(anm_table, item)
     end
 end
 common.add_anim_mutator(anm_variants, 4)
+
+-------------------------------------------------
+-- Callbacks
+-------------------------------------------------
+function on_game_start()
+	RegisterScriptCallback("actor_on_weapon_zoom_in", actor_on_weapon_zoom_in)
+	RegisterScriptCallback("actor_on_weapon_zoom_out", actor_on_weapon_zoom_out)
+end
