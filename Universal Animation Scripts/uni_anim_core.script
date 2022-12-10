@@ -21,23 +21,23 @@ local function anm_empty(anm_table, item)
 end
 common.add_anim_mutator(anm_empty, 1)
 
--- Animation: Append with  '_alt' is weapon is in grenade launcher or alt mode
-local function anm_alt(anm_table, item)
+-- Animation: Append with '_g' if weapon has a grenade launcher and can fire a grenade
+--            Append with '_w_gl' if weapon has a grenade launcher, but is not in GL mode (can fire bullets)
+--            Append with '_alt' if weapon does not have a GL, but is in alt aim mode
+local function anm_alt_modes(anm_table, item)
     local section = item:section()
-    if item:weapon_in_grenade_mode() then
-       common.mutate_anim(anm_table, "_alt", section)
+    local alt = item:weapon_in_grenade_mode()
+    local has_gl = utils_item.has_attached_gl(item)
+    
+    if alt and has_gl then
+        common.mutate_anim(anm_table, "_g", section)
+    elseif has_gl then
+        common.mutate_anim(anm_table, "_w_gl", section)
+    elseif alt then
+        common.mutate_anim(anm_table, "_alt", section)
     end
 end
-common.add_anim_mutator(anm_alt, 1.1)
-
--- Animation: Append with '_gl' is weapon has a grenade launcher
-local function anm_gl(anm_table, item)
-    local section = item:section()
-    if utils_item.has_attached_gl(item) then
-       common.mutate_anim(anm_table, "_gl", section)
-    end
-end
-common.add_anim_mutator(anm_gl, 1.2)
+common.add_anim_mutator(anm_alt_modes, 1.1)
 
 -- Animation: Append with  '_aim' is player is aiming down sights
 local function actor_on_weapon_zoom_in(obj)
