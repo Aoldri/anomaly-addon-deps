@@ -1,5 +1,12 @@
 local common = animation_common
 
+valid_anims = {}
+local mutate_anim = animation_common.mutate_anim
+function animation_common.mutate_anim(anm_table, anm_suffix, section)
+    table.insert(valid_anims, anm_suffix)
+    return mutate_anim(anm_table, anm_suffix, section)
+end
+
 transitions = {
 }
 
@@ -86,6 +93,13 @@ function set_strict_transition(anm_table, hud_section)
         return false
     end
 
+    -- Re-add valid suffixes from previous mutations
+    for i, anm_suffix in ipairs(valid_anims) do
+        if animation_common.has_animation(hud_section, transition_anm .. anm_suffix) then
+            transition_anm = transition_anm .. anm_suffix
+        end
+    end
+
     anm_table.anm_name = transition_anm
     return true
 end
@@ -104,16 +118,24 @@ function set_pattern_transition(anm_table, hud_section)
         return false
     end
 
+    
     local end_anm = anm_table.anm_name
     for _, transition in ipairs(item_transitions) do
-        -- end_anm should be more discriminative than start_anm
+        local transition_anm = transition["transition_anm"]
+        -- Re-add valid suffixes from previous mutations
+        for i, anm_suffix in ipairs(valid_anims) do
+            if animation_common.has_animation(hud_section, transition_anm .. anm_suffix) then
+                transition_anm = transition_anm .. anm_suffix
+            end
+        end
+
         if end_anm:match(transition["end_anm"]) and
            start_anm:match(transition["start_anm"]) and
-           start_anm ~= transition["transition_anm"] and
-           end_anm ~= transition["transition_anm"] and 
+           start_anm ~= transition_anm and
+           end_anm ~= transition_anm and 
            start_anm ~= end_anm then
 
-            anm_table.anm_name = transition["transition_anm"]
+            anm_table.anm_name = transition_anm
             return true
         end
     end
@@ -127,24 +149,18 @@ function anm_transitions(anm_table, item)
         return
     end
 
-    -- Remove _empty suffix, and add flag
-    local num_empty = 0
-    anm_table.anm_name, num_empty = anm_table.anm_name:gsub("_empty$", "")
-
     local has_strict_transition = set_strict_transition(anm_table, hud_section)
     
     if not has_strict_transition then
         set_pattern_transition(anm_table, hud_section)
     end
-
     
-    -- Don't track _empty 
+    -- Track now playing animation
     previous_anms[hud_section] = anm_table.anm_name
-    
-    -- Re-add _empty suffix if original anm was _empty'd
-    if num_empty > 0 then
-        anm_table.anm_name = anm_table.anm_name .. "_empty"
-    end
+
+    -- Clear valid anims
+    valid_anims = {}
+
     -- printf("ITEM: " .. item:section() .. " | ANM: " .. anm_table.anm_name)
 end
 

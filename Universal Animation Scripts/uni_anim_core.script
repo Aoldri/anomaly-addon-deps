@@ -6,49 +6,59 @@ common.add_flag("SHOTGUN_PUMP")
 -------------------------------------------------
 -- Animation Mutators
 -------------------------------------------------
--- Animation: Append with '_jammed' if weapon misfires
-local function anm_jammed(anm_table, item)
-    local section = item:section()
-    local is_jammed = false
-    if arti_jamming then
-        if arti_jamming.get_jammed(item:id()) then
-            is_jammed = true
-        end
-    else
-        local wpn = item:cast_Weapon()
-        if not wpn then return end
-        
-        is_jammed = item:cast_Weapon():IsMisfire()
-    end
-    if is_jammed then
-        local anm_jammed = anm_table.anm_name .. "_jammed"
-        common.mutate_anim(anm_table, anm_jammed, section)
-    end
-end
-common.add_anim_mutator(anm_jammed, 1)
-
 -- Animation: Append animation name with '_empty' if weapon is empty and has valid anim for it
 local function anm_empty(anm_table, item)
     local section = item:section()
     if IsWeapon(item) and item.get_ammo_in_magazine then
         local ammo = item:get_ammo_in_magazine()
-        -- check if weapon is empty and is not playing an _empty animation
-        if ammo == 0 and not string.find(anm_table.anm_name, "_empty") then
+        -- check if weapon is empty
+        if ammo == 0 then
             -- check if anim is defined in config
-            local anm_empty = anm_table.anm_name .. "_empty"
-            common.mutate_anim(anm_table, anm_empty, section)
+            common.mutate_anim(anm_table, "_empty", section)
             common.set_flag("SHOTGUN_PUMP")
         end
     end
 end
-common.add_anim_mutator(anm_empty, 2)
+common.add_anim_mutator(anm_empty, 1)
+
+-- Animation: Append with '_jammed' if weapon misfires (vanilla) or fails to eject (WPO)
+--            Append with '_superjammed' if magazine needs to be removed before unjam (WPO)
+local function anm_jammed(anm_table, item)
+    local section = item:section()
+    local jam_type = nil
+    -- Check for WPO jams
+    if arti_jamming then
+        local jam_status = arti_jamming.get_jam_status(item:id())
+        if jam_status == arti_jamming.JamType.FailureToEject then
+            jam_type = "_jammed"
+        elseif jam_status == arti_jamming.JamType.DoubleFeed then
+            jam_type = "_superjammed"
+        end
+    end
+    -- Check for vanilla jams (vanilla jams appear in anm_shots before WPO catches them)
+    if not jam_type then
+        local wpn = item:cast_Weapon()
+        if not wpn then return end
+        
+        jam_type = item:cast_Weapon():IsMisfire() and "_jammed" or nil
+    end
+    if jam_type then
+        local success = common.mutate_anim(anm_table, jam_type, section)
+        
+        -- Fallback to '_jammed' if '_superjammed' does not exist
+        if not success and jam_type == "_superjammed" then
+            common.mutate_anim(anm_table, jam_type, section)
+        end
+    end
+end
+common.add_anim_mutator(anm_jammed, 2)
 
 -- Animation: Prepend with _pump if performing empty reload
 local function anm_pump(anm_table, item)
    local section = item:section()
     if common.get_flag("SHOTGUN_PUMP") then
         if anm_table.anm_name == "anm_close" then
-            common.mutate_anim(anm_table, "anm_close_pump", section)
+            common.mutate_anim(anm_table, "_pump", section)
 
             -- Clear flag
             common.remove_flag("SHOTGUN_PUMP")
@@ -65,7 +75,7 @@ local function anm_variants(anm_table, item)
     while (true) do
         local anm_variant = anm_table.anm_name .. "_variant" .. (i-1)
         if common.has_animation(section, anm_variant) then
-            variants[i] = anm_variant
+            variants[i] = "_variant" .. (i-1)
         else
             break
         end

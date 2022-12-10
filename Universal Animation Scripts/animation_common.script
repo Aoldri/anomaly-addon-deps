@@ -35,11 +35,12 @@ function add_anim_mutator(functor, priority)
 end
 
 function has_animation(section, anm)
-    local hud_section = ini_sys:r_string_ex(section,"hud")
+    local hud_section = ini_sys:r_string_ex(section,"hud") or section
     return SYS_GetParam(0, hud_section, anm)
 end
 
-function mutate_anim(anm_table, new_anm, section)
+function mutate_anim(anm_table, anm_suffix, section)
+    local new_anm = anm_table.anm_name .. anm_suffix
     if has_animation(section, new_anm) then
         anm_table.anm_name = new_anm
         return true
@@ -49,7 +50,6 @@ end
 
 -- Sounds
 local sound_object_by_path = {}
---' Обертка вокруг функции, возвращающий звуковой объект.
 function get_safe_sound_object(path)
 	if sound_object_by_path[path] == nil then
 		sound_object_by_path[path] = sound_object(path)
