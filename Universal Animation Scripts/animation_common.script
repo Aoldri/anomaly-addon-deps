@@ -78,7 +78,8 @@ function actor_on_hud_animation_play(anm_table, item)
 
     -- Execute each mutator functor in turn, ordered by priority
     for i, mutator in ipairs(anim_mutators) do
-        mutator.functor(anm_table, item)
+        local stop = mutator.functor(anm_table, item)
+        if stop then break end
     end
 
     -- Animation (No Mutation): Clear all flags if holstering weapon
