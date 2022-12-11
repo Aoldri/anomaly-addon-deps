@@ -16,10 +16,10 @@ function block_shotgun_reload(anm_table, item)
     -- Cancel shotgun reload
     anm_table.anm_name = "$cancel"
     
-    -- Play unjam animation
+    -- Play unjam animation and sound
     CreateTimeEvent("shotgun_unjam_fix", "start_unjam", 0.001, function(wpn)
-        printf("start unjam")
         wpn:play_hud_motion("anm_reload_misfire", true, 0, 1, 0)
+        utils_obj.play_sound("snd_reload_misfire")
         common.set_flag("SHOTGUN_UNJAM")
         return true
     end, item)
