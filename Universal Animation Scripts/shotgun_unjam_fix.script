@@ -19,8 +19,12 @@ function block_shotgun_reload(anm_table, item)
     -- Play unjam animation and sound
     CreateTimeEvent("shotgun_unjam_fix", "start_unjam", 0.001, function(wpn)
         wpn:play_hud_motion("anm_reload_misfire", true, 0, 1, 0)
-        local sound = SYS_GetParam(0, wpn:section(), "snd_reload_misfire")
-        utils_obj.play_sound(sound)
+        
+        -- Allow sound cancel if animation is interrupted
+        local sound_path = SYS_GetParam(0, wpn:section(), "snd_reload_misfire")
+        local sound = common.get_safe_sound_object(sound_path)
+        sound:play(db.actor, 0, sound_object.s2d)
+        
         common.set_flag("SHOTGUN_UNJAM")
         return true
     end, item)
