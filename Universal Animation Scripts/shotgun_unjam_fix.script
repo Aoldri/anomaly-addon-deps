@@ -38,6 +38,15 @@ function actor_on_hud_animation_end(item,section,motion,state,slot)
     end
 end
 
+-- Stop unjam spam
+function on_before_key_press(dik, bind, dis, flags)
+    if bind == key_bindings.kWPN_RELOAD
+    and common.get_flag("SHOTGUN_UNJAM") then
+        flags.ret_value = false
+    end
+end
+
 function on_game_start()
 	RegisterScriptCallback("actor_on_hud_animation_end",actor_on_hud_animation_end)
+    RegisterScriptCallback("on_before_key_press",on_before_key_press)
 end
