@@ -1,0 +1,479 @@
+---------------------
+-- Helper functions
+---------------------
+function move_and_center_element(element, x, y)
+    local pos = vector2()
+    pos.x = x - element:GetWidth()/2
+    pos.y = y - element:GetHeight()/2
+
+    element:SetWndPos(pos)
+end
+
+---Scales UI elements to correct ratio after UI scaling
+---Written by RavenAscendant, Yoinked and Commented by Aoldri
+---@param ele CUIStatic
+---@param adjust_x? boolean
+---@param anchor? boolean
+---@param anchor_point? `left`|`right`|`center`
+---@param parent_width? number
+function scale_ui(ele, adjust_x, anchor, anchor_point, parent_width)
+	p_width = parent_width or 1024
+	p_center = p_width/2
+	width = ele:GetWidth()
+	pos = ele:GetWndPos()
+	anchorpos = {}
+	anchorpos.left = pos.x
+	anchorpos.right = anchorpos.left + width
+	anchorpos.center = anchorpos.left + width/2
+	ratio = (device().height / device().width) / (768 / 1024)
+	xadjust = anchorpos.left
+	if adjust_x then
+		if anchor_point == "right" then
+			xadjust = p_width - (p_width - (anchor and anchorpos[anchor] or anchorpos.left))*ratio
+		elseif anchor_point == "center" then
+			xadjust = p_center - (p_center - (anchor and anchorpos[anchor] or anchorpos.left))*ratio
+		else
+			xadjust = ratio * (anchor and anchorpos[anchor] or anchorpos.left)
+		end
+	end
+	ele:SetWndSize(vector2():set(ele:GetWidth() * ratio, ele:GetHeight()))
+	ele:SetWndPos( vector2():set(xadjust , pos.y ) )
+end
+
+-----------
+-- States
+-----------
+----Enum for option states
+---@enum States
+States = {
+    ENABLED = 1, -- Option is visible and accessible
+    DISABLED = 2, -- Option is visible, but not accessible
+    HIGHLIGHTED = 3, -- Option is 'selected' or 'active'
+    TOUCHED = 4, -- Mouse is hovering over option
+}
+
+-- Useful functions
+State2Suffix = {
+    [States.ENABLED] = "_e",
+    [States.DISABLED] = "_d",
+    [States.HIGHLIGHTED] = "_h",
+    [States.TOUCHED] = "_t",
+}
+
+---Appends a texture name with a suffix corresponding to the state, like textures for CUI3tButton
+---@param texture string
+---@param state States
+---@param fallback string
+---@return string
+function get_stateful_texture(texture, state, fallback)
+    local suffix = State2Suffix[state]
+    if suffix then return texture .. suffix end
+    return fallback
+end
+
+State2Colour = {
+    [States.ENABLED] = GetARGB(70, 255, 255, 255),
+    [States.DISABLED] = GetARGB(0, 255, 255, 255),
+    [States.HIGHLIGHTED] = GetARGB(255, 255, 255, 255),
+    [States.TOUCHED] = GetARGB(255, 255, 255, 255),
+}
+
+---Gets a colour dependent on option state
+---@param state States
+---@return number
+function get_stateful_colour(state)
+    return State2Colour[state]
+end
+------------------------------------------------------------------
+-- UI
+-------------------------------------------------------------------
+class "OptionData"
+
+---@param callback_id string
+---@param texture string|fun(States): string
+function OptionData:__init(callback_id, texture)
+    self.callback_id = callback_id
+    self:SetTexture(texture)
+    self.state = States.ENABLED
+end
+
+-- Texture
+---@param texture string|fun(States): string
+function OptionData:SetTexture(texture)
+    self.texture = texture
+end
+
+---@return string
+function OptionData:GetTexture()
+    return self:GetAttribute("texture")
+end
+
+-- Text
+---@param text {title: string, description: string}
+function OptionData:SetText(text)
+    if not text.description then text.description = "" end
+    self.text = text
+end
+
+---@return {title: string, description: string}
+function OptionData:GetText()
+    return self:GetAttribute("text") or {title="", description=""}
+end
+
+-- Colour
+---@param colour number|fun(States): number
+function OptionData:SetColour(colour)
+    self.colour = colour
+end
+
+---@return number
+function OptionData:GetColour()
+    return self:GetAttribute("colour") or GetARGB(255, 255, 255, 255)
+end
+
+-- State
+---@param state States
+function OptionData:SetState(state)
+    self.state = state
+end
+
+---@return States
+function OptionData:GetState()
+    return self.state
+end
+
+---@param state States
+---@return boolean
+function OptionData:IsState(state)
+    return self.state == state
+end
+
+---@param attribute string
+---@return any
+function OptionData:GetAttribute(attribute)
+    local value = nil
+    if type(self[attribute]) == "function" then
+        value = self[attribute](self.state)
+    else
+        value = self[attribute]
+    end
+
+    return value
+end
+
+---
+
+class "UIRadialMenu" (CUIScriptWnd)
+
+function UIRadialMenu:__init() super()
+    self:SetWndRect(Frect():set(0,0,1024,768))
+    self:AllowMovement(true)
+    self:SetAutoDelete(true)
+
+    self.xml = CScriptXmlInit()
+	self.xml:ParseFile("ui_radial_menu.xml")
+
+    self.callbacks = {}
+
+    ---@type table<number, OptionData>
+    self.option_data = {} -- Holds info about each option
+
+    ---@type table<number, {icon: CUIStatic, hover_bg: CUIStatic, selected_bg: CUIStatic, angle: number}>
+    self.options = {} -- Holds UI elements for each option
+
+    -- Calculate center of screen
+    self.center = vector2():set(self:GetWidth()/2, self:GetHeight()/2)
+
+    -- Background
+    self.bg = self.xml:InitStatic("bg", self)
+    move_and_center_element(self.bg, self.center.x, self.center.y)
+    scale_ui(self.bg, true, true, "center")
+
+    -- Cursor
+    self.cursor = self.xml:InitStatic("cursor", self)
+    self.cursor:EnableHeading(true)
+    move_and_center_element(self.cursor, self.center.x, self.center.y-self.cursor:GetHeight()/2)
+    -- not sure why i don't have to re-scale this element
+    -- scale_ui(self.cursor, true, true, "center")
+
+    -- Central label
+    self.title = self.xml:InitTextWnd("title", self)
+    move_and_center_element(self.title, self.title:GetWndPos().x, self.title:GetWndPos().y)
+
+    -- Central description
+    self.description = self.xml:InitTextWnd("description", self)
+    move_and_center_element(self.description, self.description:GetWndPos().x, self.description:GetWndPos().y)
+
+    self.hovered_option_i = 1
+
+    self:DrawOptions()
+end
+
+function UIRadialMenu:__finalize()
+end
+
+---- Adds an option to the menu with specific callback id, texture, colour, and initial state.
+---- Both `get_texture()` and `get_colour()` are functions with the option state passed as a parameter
+---- Options are shown in order of when they are added, starting from the top and rotating clockwise
+---@param option_data OptionData
+---@return boolean success
+function UIRadialMenu:AddOption(option_data)
+    if not option_data then return false end
+    if not option_data:GetTexture() then return false end
+
+    table.insert(self.option_data, option_data)
+    return true
+end
+
+---Gets state of an option
+---@param callback_id string
+---@return States
+function UIRadialMenu:GetOptionState(callback_id)
+    -- Look through each option and check for callback_id
+    for i, opt in ipairs(self.option_data) do
+        if opt.callback_id == callback_id then
+            return opt:GetState()
+        end
+    end
+    -- returns nil if invalid callback_id
+end
+
+---Sets the state of an option
+---@param callback_id string
+---@param state States
+---@return boolean success
+function UIRadialMenu:SetOptionState(callback_id, state)
+    local option = nil
+    -- Try to find option with callback id
+    if type(callback_id) == "string" then
+        -- Look through each option and check for callback_id
+        for i, opt in ipairs(self.option_data) do
+            if opt.callback_id == callback_id then
+                option = opt
+            end
+        end
+    end
+    if not option then return false end
+
+    option.state = state
+    return true
+end
+
+function UIRadialMenu:DrawOptions()
+    -- Remove old options in case new options were added or options were removed
+    self:ResetUI()
+
+    -- Create buttons
+    for i, btn_datum in ipairs(self.option_data) do
+        self.options[i] = {}
+
+        -- Create BGs
+        local hover_bg = self.xml:InitStatic("hover_bg", self)
+        local selected_bg = self.xml:InitStatic("selected_bg", self)
+
+        -- Create Icon
+        local icon = self.xml:InitStatic("icon", self)
+        icon:SetStretchTexture(true)
+
+        -- Calculate position (relative to centre)
+        local x = icon:GetWndPos().x
+        local y = icon:GetWndPos().y
+
+        local angle = (2*math.pi * ((i-1)/#self.option_data))
+        angle = angle --+ 2*math.pi*(1/12)
+
+        local new_x = x*math.cos(angle) - y*math.sin(angle)
+        local new_y = y*math.cos(angle) + x*math.sin(angle)
+
+        -- Offset position so that it centers around the middle
+        new_x = new_x + self.center.x
+        new_y = new_y + self.center.y
+
+        printf("new_x: %s, new_y: %s", new_x, new_y)
+
+        -- Move to point and center on it
+        move_and_center_element(icon, new_x, new_y)
+        scale_ui(icon, true, true, "center")
+
+        move_and_center_element(hover_bg, new_x, new_y)
+        scale_ui(hover_bg, true, true, "center")
+        hover_bg:Show(false)
+
+        move_and_center_element(selected_bg, new_x, new_y)
+        scale_ui(selected_bg, true, true, "center")
+        selected_bg:Show(false)
+
+        self.options[i].icon = icon
+        self.options[i].hover_bg = hover_bg
+        self.options[i].selected_bg = selected_bg
+        self.options[i].angle = angle
+
+        -- Update Icon
+        self:UpdateIcon(i)
+    end
+end
+
+function UIRadialMenu:OnButtonClick(i)
+    ---@alias callback_flags {close_gui: boolean}
+    local flags = {
+        close_gui = true,
+    }
+    self:SendCallback(self.option_data[i].callback_id, flags)
+
+    if flags.close_gui then
+        self:Close()
+    end
+end
+
+-- TODO: Rewrite logic to look better maybe
+function UIRadialMenu:OnButtonHover(i)
+    if self.hovered_option_i == i then return end
+
+    -- New option
+    self.options[i].hover_bg:Show(true)
+    self.title:SetText(self.option_data[i]:GetText().title)
+    self.description:SetText(self.option_data[i]:GetText().description)
+    if self.option_data[i]:IsState(States.ENABLED) then
+        self.option_data[i]:SetState(States.TOUCHED)
+    end
+
+    -- Previous option
+    self.options[self.hovered_option_i].hover_bg:Show(false)
+    if self.option_data[self.hovered_option_i]:IsState(States.TOUCHED) then
+        self.option_data[self.hovered_option_i]:SetState(States.ENABLED)
+    end
+
+    self.hovered_option_i = i
+end
+
+function UIRadialMenu:SendCallback(callback_id, ...)
+    local funcs = self.callbacks[callback_id]
+    if not funcs then return end
+    for i, func in ipairs(funcs) do
+        func(...)
+    end
+end
+
+---Register a function to be called when an option with the corresponding callback_id is selected.
+---Each function is executed in order of when they were registered with this function.
+---
+---This function should take in one parameter: `flags`
+---
+--- - flags.close_gui will close the menu if `true` (default: `true`)
+---@param callback_id string
+---@param callback_function fun(flags: callback_flags)
+function UIRadialMenu:RegisterCallback(callback_id, callback_function)
+    self.callbacks[callback_id] = self.callbacks[callback_id] or {}
+    table.insert(self.callbacks[callback_id], callback_function)
+end
+
+function UIRadialMenu:ResetUI()
+    -- Remove pre-existing options
+    if self.options ~= nil then
+        for i, opt in ipairs(self.options) do
+            self:DetachChild(opt.icon)
+            self:DetachChild(opt.hover_bg)
+            self:DetachChild(opt.selected_bg)
+        end
+    end
+    self.options = {}
+end
+
+function UIRadialMenu:Reset()
+    self:ResetUI()
+    self.option_data = {}
+    self.callbacks = {}
+end
+
+function UIRadialMenu:UpdateIcon(i)
+    local icon = self.options[i].icon
+    local data = self.option_data[i]
+
+    -- Set Texture
+    icon:InitTexture(data:GetTexture())
+
+    -- Set Colour
+    icon:SetTextureColor(data:GetColour())
+
+    if data:IsState(States.HIGHLIGHTED) then
+        self.options[i].selected_bg:Show(true)
+    else
+        self.options[i].selected_bg:Show(false)
+    end
+end
+
+function UIRadialMenu:Update()
+	CUIScriptWnd.Update(self)
+
+    -- Update Cursor pos and rot
+    local cur_pos = vector2():set(0, -self.cursor:GetHeight()/2)
+    local mouse_pos = GetCursorPosition()
+
+    local x_scale = (device().height / device().width) / (768 / 1024)
+
+    -- Get angle from center of screen to mouse cursor
+    -- Account for scaling from 1024x768 so that the cursor rotates towards cursor properly
+    local angle = math.atan2(-(mouse_pos.x-self.center.x)/x_scale, -(mouse_pos.y-self.center.y))
+    angle = (angle < 0) and 2*math.pi+angle or angle
+    angle = 2*math.pi - angle
+
+    local new_x = cur_pos.x*math.cos(angle) - cur_pos.y*math.sin(angle)
+    local new_y = cur_pos.y*math.cos(angle) + cur_pos.x*math.sin(angle)
+
+    -- Scale Correction
+    new_x = new_x*x_scale
+
+    -- Move to orbit around center of screen
+    new_x = new_x + self.center.x
+    new_y = new_y + self.center.y
+
+    move_and_center_element(self.cursor, new_x, new_y)
+
+    self.cursor:SetHeading(2*math.pi - angle)
+
+    -- Get option from angle
+    local best_i = nil
+    local best_similarity = nil
+    for i, option in ipairs(self.options) do
+        -- Ignore disabled options
+        if not self.option_data[i]:IsState(States.DISABLED) then
+            local similarity = math.pi - math.abs(math.fmod(math.abs(angle - option.angle), 2*math.pi) - math.pi)
+
+            if best_similarity == nil or similarity < best_similarity then
+                best_similarity = similarity
+                best_i = i
+            end
+        end
+    end
+
+    if best_i then self:OnButtonHover(best_i) end
+
+    -- Update option textures
+    for i, option in ipairs(self.options) do
+        self:UpdateIcon(i)
+    end
+end
+
+function UIRadialMenu:OnAccept()
+end
+
+function UIRadialMenu:OnKeyboard(dik, keyboard_action)
+	local res = CUIScriptWnd.OnKeyboard(self,dik,keyboard_action)
+	if (res == false) then
+		if keyboard_action == ui_events.WINDOW_KEY_PRESSED then
+			if dik == DIK_keys.DIK_ESCAPE then
+				self:Close()
+			end
+            if dik == DIK_keys.MOUSE_1 then
+                self:OnButtonClick(self.hovered_option_i)
+            end
+		end
+	end
+	return res
+end
+
+function UIRadialMenu:Close()
+	self:HideDialog()
+
+	Unregister_UI("UIRadialMenu")
+end

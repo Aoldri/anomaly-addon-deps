@@ -1,0 +1,100 @@
+------------------------------------------------------------------
+-- Radial Menu Example
+-------------------------------------------------------------------
+---@class UIRadialMenu
+GUI = nil -- instance, don't touch
+
+function create_gui()
+    ---@class UIRadialMenu
+    local GUI = arm.UIRadialMenu()
+    
+    -- Option 1
+    ---@class OptionData
+    local option1 = arm.OptionData("option1", function(state)
+        return("ui_new_game_btn_bandit_h") -- static texture
+    end)
+    -- Colour
+    option1:SetColour(function (state)
+        return arm.get_stateful_colour(state) -- stateful colour
+    end)
+    -- Text
+    option1:SetText({title = "Bandit",
+                     description = "Does nothing :)"})
+
+    -- Option 2    
+    ---@class OptionData
+    local option2 = arm.OptionData("option2", "ui_new_game_btn_stalker_h") -- static texture w/o function
+    -- Colour
+    option2:SetColour(function (state)
+        return arm.get_stateful_colour(state) -- stateful colour
+    end)
+    option2:SetText({title = "Stalker",
+                     description = "Also does nothing\\nToggle button though :O"})
+
+    -- Option 3
+    ---@class OptionData
+    local option3 = arm.OptionData("option3", function(state) -- stateful texture
+        return arm.get_stateful_texture("ui_pda2_bt_sq_next", state, "ui_pda2_bt_sq_next_e")
+    end)
+    option3:SetText({title = "PDA",
+                     description = "Does.. nothing still\\nLooks like a toggle button tho"})
+
+    -- Add options to Radial Menu GUI
+    GUI:AddOption(option1)
+    GUI:AddOption(option2)
+    GUI:AddOption(option3)
+
+    -- Callbacks
+    GUI:RegisterCallback("option1", function(flags)
+        printf("> Selected: Bandit option!")
+    end)
+
+    GUI:RegisterCallback("option2", function(flags)
+        printf("> Selected: Stalker option!")
+
+        -- These setters/getters can be replaced with the UIRadialMenu methods
+        -- if you didn't retain the original OptionData for some reason
+        local new_state = option2:IsState(arm.States.HIGHLIGHTED) and arm.States.ENABLED or arm.States.HIGHLIGHTED
+        option2:SetState(new_state)
+
+        flags.close_gui = false
+    end)
+
+    GUI:RegisterCallback("option3", function(flags)
+        printf("> Selected: PDA icon button option!")
+    end)
+
+    -- Draw options - Must be called after adding options
+    GUI:DrawOptions()
+
+    return GUI
+end
+
+function open_radial_menu()
+	if not DEV_DEBUG then
+		return
+	end
+    
+	hide_hud_inventory()
+    
+	if (not GUI) then
+        GUI = create_gui()
+	end
+    
+	if (GUI) and (not GUI:IsShown()) then
+		GUI:ShowDialog(true)
+        
+		Register_UI("UIRadialMenu","radial_menu")
+	end
+end
+
+
+function on_key_press(dik)
+    if dik == DIK_keys.DIK_TAB then
+        open_radial_menu()
+    end
+end
+
+function on_game_start()
+    RegisterScriptCallback("on_key_press", on_key_press)
+end

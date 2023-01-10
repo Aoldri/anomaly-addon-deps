@@ -1,0 +1,15 @@
+<w>
+	<file name="ui\arm_radial_menu">
+		<!-- Background -->
+		<texture id="ui_arm_wheel_bg" x="4" y="4" width="600" height="600" />
+
+		<!-- Spinning Cursor -->
+		<texture id="ui_arm_cursor" x="4" y="609" width="600" height="300" />
+
+		<!-- Hover Option BG -->
+		<texture id="ui_arm_opt_hover" x="608" y="4" width="140" height="140" />
+
+		<!-- Selected Option BG -->
+		<texture id="ui_arm_opt_selected" x="608" y="148" width="140" height="140" />
+	</file>
+</w>
