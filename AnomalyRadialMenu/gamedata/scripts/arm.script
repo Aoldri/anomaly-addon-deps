@@ -73,7 +73,7 @@ end
 
 State2Colour = {
     [States.ENABLED] = GetARGB(70, 255, 255, 255),
-    [States.DISABLED] = GetARGB(0, 255, 255, 255),
+    [States.DISABLED] = GetARGB(70, 255, 255, 255),
     [States.HIGHLIGHTED] = GetARGB(255, 255, 255, 255),
     [States.TOUCHED] = GetARGB(255, 255, 255, 255),
 }
@@ -314,6 +314,8 @@ function UIRadialMenu:DrawOptions()
 end
 
 function UIRadialMenu:OnButtonClick(i)
+    if self.option_data[i]:IsState(States.DISABLED) then return end
+
     ---@alias callback_flags {close_gui: boolean}
     local flags = {
         close_gui = true,
@@ -436,14 +438,14 @@ function UIRadialMenu:Update()
     local best_similarity = nil
     for i, option in ipairs(self.options) do
         -- Ignore disabled options
-        if not self.option_data[i]:IsState(States.DISABLED) then
+        -- if not self.option_data[i]:IsState(States.DISABLED) then
             local similarity = math.pi - math.abs(math.fmod(math.abs(angle - option.angle), 2*math.pi) - math.pi)
 
             if best_similarity == nil or similarity < best_similarity then
                 best_similarity = similarity
                 best_i = i
             end
-        end
+        -- end
     end
 
     if best_i then self:OnButtonHover(best_i) end
