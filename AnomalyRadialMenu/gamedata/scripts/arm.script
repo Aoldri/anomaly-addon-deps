@@ -225,38 +225,17 @@ function UIRadialMenu:AddOption(option_data)
     return true
 end
 
----Gets state of an option
+---Gets an option
 ---@param callback_id string
----@return States
-function UIRadialMenu:GetOptionState(callback_id)
+---@return OptionData
+function UIRadialMenu:GetOption(callback_id)
     -- Look through each option and check for callback_id
     for i, opt in ipairs(self.option_data) do
         if opt.callback_id == callback_id then
-            return opt:GetState()
+            return opt
         end
     end
     -- returns nil if invalid callback_id
-end
-
----Sets the state of an option
----@param callback_id string
----@param state States
----@return boolean success
-function UIRadialMenu:SetOptionState(callback_id, state)
-    local option = nil
-    -- Try to find option with callback id
-    if type(callback_id) == "string" then
-        -- Look through each option and check for callback_id
-        for i, opt in ipairs(self.option_data) do
-            if opt.callback_id == callback_id then
-                option = opt
-            end
-        end
-    end
-    if not option then return false end
-
-    option.state = state
-    return true
 end
 
 function UIRadialMenu:DrawOptions()
