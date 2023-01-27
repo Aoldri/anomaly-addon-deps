@@ -313,7 +313,9 @@ function UIRadialMenu:OnButtonHover(i)
     -- New option
     self.options[i].hover_bg:Show(true)
     self.title:SetText(self.option_data[i]:GetText().title)
+    self.title:AdjustHeightToText()
     self.description:SetText(self.option_data[i]:GetText().description)
+    self.description:SetWndPos(vector2():set(self.description:GetWndPos().x, self.title:GetWndPos().y + self.title:GetHeight() + 8))
     if self.option_data[i]:IsState(States.ENABLED) then
         self.option_data[i]:SetState(States.TOUCHED)
     end
