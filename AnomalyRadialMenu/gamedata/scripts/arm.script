@@ -63,7 +63,7 @@ State2Suffix = {
 ---Appends a texture name with a suffix corresponding to the state, like textures for CUI3tButton
 ---@param texture string
 ---@param state States
----@param fallback string
+---@param fallback? string
 ---@return string
 function get_stateful_texture(texture, state, fallback)
     local suffix = State2Suffix[state]
@@ -175,7 +175,7 @@ function UIRadialMenu:__init() super()
 
     self.callbacks = {}
 
-    ---@type table<number, OptionData>
+    ---@type table<number, arm.OptionData>
     self.option_data = {} -- Holds info about each option
 
     ---@type table<number, {icon: CUIStatic, hover_bg: CUIStatic, selected_bg: CUIStatic, angle: number}>
@@ -215,7 +215,7 @@ end
 ---- Adds an option to the menu with specific callback id, texture, colour, and initial state.
 ---- Both `get_texture()` and `get_colour()` are functions with the option state passed as a parameter
 ---- Options are shown in order of when they are added, starting from the top and rotating clockwise
----@param option_data OptionData
+---@param option_data arm.OptionData
 ---@return boolean success
 function UIRadialMenu:AddOption(option_data)
     if not option_data then return false end
@@ -227,7 +227,7 @@ end
 
 ---Gets an option
 ---@param callback_id string
----@return OptionData
+---@return arm.OptionData
 function UIRadialMenu:GetOption(callback_id)
     -- Look through each option and check for callback_id
     for i, opt in ipairs(self.option_data) do
