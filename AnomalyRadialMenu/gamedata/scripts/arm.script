@@ -268,7 +268,7 @@ function UIRadialMenu:DrawOptions()
         new_x = new_x + self.center.x
         new_y = new_y + self.center.y
 
-        printf("new_x: %s, new_y: %s", new_x, new_y)
+        -- printf("new_x: %s, new_y: %s", new_x, new_y)
 
         -- Move to point and center on it
         move_and_center_element(icon, new_x, new_y)
