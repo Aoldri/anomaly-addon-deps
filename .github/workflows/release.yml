@@ -28,3 +28,4 @@ jobs:
       with:
         artifacts: "AnomalyAddonDependencies.zip"
         token: ${{ secrets.GITHUB_TOKEN }}
+        generateReleaseNotes: true
