@@ -22,8 +22,10 @@ function block_shotgun_reload(anm_table, item)
         
         -- Allow sound cancel if animation is interrupted
         local sound_path = SYS_GetParam(0, wpn:section(), "snd_reload_misfire")
-        local sound = common.get_safe_sound_object(sound_path, wpn:section())
-        sound:play(db.actor, 0, sound_object.s2d)
+        if sound_path then
+            local sound = common.get_safe_sound_object(sound_path, wpn:section())
+            sound:play(db.actor, 0, sound_object.s2d)
+        end
         
         common.set_flag("SHOTGUN_UNJAM")
         return true

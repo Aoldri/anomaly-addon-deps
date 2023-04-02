@@ -51,6 +51,9 @@ end
 -- Sounds
 local sound_object_by_sec_by_path = {}
 function get_safe_sound_object(path, sec)
+    assert(path, "path to sound file was nil")
+    assert(sec, "item section was nil")
+
 	if sound_object_by_sec_by_path[sec] == nil then
 		sound_object_by_sec_by_path[sec] = {}
 	end
@@ -60,11 +63,11 @@ function get_safe_sound_object(path, sec)
 end
 
 function stop_all_sound_object(sec)
-    printf("stop_all_sound_object(sec): %s", sec)
+    -- printf("stop_all_sound_object(sec): %s", sec)
 	for section, list in pairs(sound_object_by_sec_by_path) do
         for path, v in pairs(list) do
             if section == sec and v:playing() then
-                printf("sec: %s| Stopping: %s", sec, path)
+                -- printf("sec: %s| Stopping: %s", sec, path)
                 v:stop()
             end
         end
