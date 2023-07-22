@@ -4,7 +4,7 @@ function is_valid_wpn(wpn)
 
     -- Ignore weapons that are not jammed / at max ammo capacity
     local casted_wpn = wpn:cast_Weapon()
-    if not casted_wpn:IsMisfire() and casted_wpn:GetAmmoElapsed() == casted_wpn:GetAmmoMagSize() then
+    if (not casted_wpn) or (not casted_wpn:IsMisfire() and casted_wpn:GetAmmoElapsed() == casted_wpn:GetAmmoMagSize()) then
         return false
     end
 
