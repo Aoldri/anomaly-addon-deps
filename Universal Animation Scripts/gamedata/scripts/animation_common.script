@@ -92,11 +92,6 @@ function actor_on_hud_animation_play(anm_table, item)
         if stop then break end
     end
 
-    -- Animation (No Mutation): Clear all flags if holstering weapon
-    if anm_table.anm_name == "anm_hide" or anm_table.anm_name == "anm_hide_empty" then
-        active_flags = {}
-    end
-
     -- Sound: Check if weapon has a valid scripted sound in config
     local anm_name = anm_table.anm_name
 
