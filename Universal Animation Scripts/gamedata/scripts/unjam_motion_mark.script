@@ -1,7 +1,14 @@
 -- Clear jam mid animation with motion marks
+-- Known bug: Is called for NPC reloads
 function actor_on_hud_animation_mark(state, mark)
 	if mark == "clear_jam" then
-		db.actor:active_item():cast_Weapon():SetMisfire(false)
+		local item = db.actor:active_item()
+		if not item then return end
+
+		local wpn = item:cast_Weapon()
+		if not wpn then return end
+
+		wpn:SetMisfire(false)
 	end
 end
 
