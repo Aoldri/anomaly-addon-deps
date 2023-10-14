@@ -29,6 +29,23 @@ if enhanced_animations then
     end
 end
 
+---@param item game_object
+local function is_item_valid(item)
+    -- valid if item is equipped detector
+    local player_detector = db.actor:active_detector()
+    if player_detector and item:id() == player_detector:id() then
+        return true
+    end
+
+    -- valid if item is PDA
+    local class = ini_sys:r_string(item:section(), "class")
+    if class == "D_PDA" then
+        return true
+    end
+
+    return false
+end
+
 -- Animation: Append with '_quick' for detectors if:
 --               - weapon in main hand is reloading or unjamming
 --               - player is climbing
@@ -40,10 +57,8 @@ local function anm_quick_detector(anm_table, item)
     if not parent then return end
     if parent:id() ~= AC_ID then return end
 
-    -- cancel if item is not detector
-    local player_detector = db.actor:active_detector()
-    if not player_detector then return end
-    if item:id() ~= player_detector:id() then return end
+    -- cancel if not valid item
+    if not is_item_valid(item) then return end
 
     -- Add 'quick' if previous anim was also quick (intended for holster-draw pairs)
     if common.get_flag("QUICK_DETECTOR") then
