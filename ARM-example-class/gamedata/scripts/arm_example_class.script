@@ -1,0 +1,129 @@
+---==================================================================================================================---
+---                                                                                                                  ---
+---    Original Author(s) : NLTP_ASHES                                                                               ---
+---    Edited : N/A                                                                                                  ---
+---    Date : 08/12/2023                                                                                             ---
+---                                                                                                                  ---
+---    Example script demonstrating how to use the Anomaly Radial Menu (ARM) by creating a child class.              ---
+---                                                                                                                  ---
+---    IMPORTANT: This is not made for real use. It is merely for demonstration purposes.                            ---
+---                                                                                                                  ---
+---==================================================================================================================---
+
+-- ---------------------------------------------------------------------------------------------------------------------
+-- Variables
+-- ---------------------------------------------------------------------------------------------------------------------
+
+GUI                = nil -- instance, don't touch
+KEYBINDING         = DIK_keys.DIK_TAB
+
+-- ---------------------------------------------------------------------------------------------------------------------
+-- General functions
+-- ---------------------------------------------------------------------------------------------------------------------
+
+--- Function used to open the radial menu.
+--- This function will instantiate a new UIRadialExample class, or use the singleton if it has already been created.
+--- @return nil
+function open_radial_menu(dik)
+    if dik ~= KEYBINDING then
+        return
+    end
+
+    if not DEV_DEBUG then
+        return
+    end
+
+    hide_hud_inventory()
+
+    if (not GUI) then
+        GUI = UIRadialExample()
+    end
+
+    if (GUI) and (not GUI:IsShown()) then
+        GUI:ShowDialog(true)
+
+        Register_UI("UIRadialExample", "radial_menu")
+    end
+end
+
+--- Lifecycle function used to register callbacks.
+--- @return nil
+function on_game_start()
+    RegisterScriptCallback("on_key_press", open_radial_menu)
+end
+
+-- ---------------------------------------------------------------------------------------------------------------------
+-- UI Class
+-- ---------------------------------------------------------------------------------------------------------------------
+
+class "UIRadialExample" (arm.UIRadialMenu)
+
+function UIRadialExample:__init() super()
+    -- Option 1 (stateless texture w/ function)
+    local option1 = arm.OptionData("option1", function(state)
+        return("ui_new_game_btn_bandit_h")
+    end)
+    -- Colour (stateful)
+    option1:SetColour(function (state)
+        return arm.get_stateful_colour(state)
+    end)
+    -- Text
+    option1:SetText({title = "Bandit", description = "Does nothing :)"})
+
+    -- Option 2 (stateless texture w/o function)
+    local option2 = arm.OptionData("option2", "ui_new_game_btn_stalker_h")
+    -- Colour (stateless)
+    option2:SetColour(function (state)
+        return GetARGB(70, 255, 255, 255)
+    end)
+    -- Text
+    option2:SetText({title = "Stalker", description = "Also does nothing\\nToggle button though :O"})
+
+    -- Option 3 (stateful texture)
+    local option3 = arm.OptionData("option3", function(state)
+        return arm.get_stateful_texture("ui_pda2_bt_sq_next", state, "ui_pda2_bt_sq_next_e")
+    end)
+    -- Text
+    option3:SetText({title = "PDA", description = "Does.. nothing still\\nLooks like a toggle button tho"})
+
+    -- Add options to Radial Menu GUI
+    arm.UIRadialMenu.AddOption(self, option1)
+    arm.UIRadialMenu.AddOption(self, option2)
+    arm.UIRadialMenu.AddOption(self, option3)
+
+    -- Callbacks
+    arm.UIRadialMenu.RegisterCallback(self, "option1", function(flags)
+        printf("> Selected: Bandit option!")
+    end)
+
+    arm.UIRadialMenu.RegisterCallback(self, "option2", function(flags)
+        printf("> Selected: Stalker option!")
+
+        -- These setters/getters can be replaced with the UIRadialMenu methods
+        -- if you didn't retain the original OptionData for some reason
+        local new_state = option2:IsState(arm.States.HIGHLIGHTED) and arm.States.ENABLED or arm.States.HIGHLIGHTED
+        option2:SetState(new_state)
+
+        flags.close_gui = false
+    end)
+
+    arm.UIRadialMenu.RegisterCallback(self, "option3", function(flags)
+        printf("> Selected: PDA icon button option!")
+    end)
+
+    -- Draw options - Must be called after adding options
+    self:DrawOptions()
+end
+
+function UIRadialExample:DrawOptions()
+    -- call to parent class
+    arm.UIRadialMenu.DrawOptions(self)
+
+    -- you can redefine and extend functions from parent class
+    printf("> Drawing options !")
+end
+
+function UIRadialExample:Close()
+    self:HideDialog()
+    Unregister_UI("UIRadialExample")
+end
