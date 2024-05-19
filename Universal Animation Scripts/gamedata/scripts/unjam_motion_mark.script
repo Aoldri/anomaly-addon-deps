@@ -12,7 +12,7 @@ function actor_on_hud_animation_mark(state, mark, hud_item, owner)
 
 		if owner:id() ~= AC_ID then return end
 
-		hud_item:SetMisfire(false)
+		wpn:SetMisfire(false)
 	end
 end
 
