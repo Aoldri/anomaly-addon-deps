@@ -27,8 +27,8 @@ common.add_anim_mutator(anm_empty, 1)
 local function anm_alt_modes(anm_table, item)
     local section = item:section()
     local alt = item:weapon_in_grenade_mode()
-    local has_gl = utils_item.has_attached_gl(item)
-    
+    local has_gl = (item:weapon_grenadelauncher_status() == 2 or item:weapon_grenadelauncher_status() == 1) and item:weapon_is_grenadelauncher()
+
     if alt and has_gl then
         common.mutate_anim(anm_table, "_g", section)
     elseif has_gl then
