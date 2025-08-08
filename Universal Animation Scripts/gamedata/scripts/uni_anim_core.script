@@ -26,6 +26,8 @@ common.add_anim_mutator(anm_empty, 1)
 --            Append with '_alt' if weapon does not have a GL, but is in alt aim mode
 local function anm_alt_modes(anm_table, item)
     local section = item:section()
+    if not IsWeapon(item) then return end
+
     local alt = item:weapon_in_grenade_mode()
     local has_gl = (item:weapon_grenadelauncher_status() == 2 or item:weapon_grenadelauncher_status() == 1) and item:weapon_is_grenadelauncher()
 
