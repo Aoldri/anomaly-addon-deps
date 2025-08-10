@@ -1,0 +1,28 @@
+local no_reload_on_unjam_mcm = false
+
+-- Stop reloading the gun when unjamming
+local function no_reload_on_unjam(anm_table, item)
+    if not no_reload_on_unjam_mcm then return end
+
+    if not IsWeapon(item) then return end
+
+    -- stop reload if gun has unjam animation and is unjamming vanilla
+    if (string.find(anm_table.anm_name, "reload_misfire") and anm_table.anm_state == 7) then
+        anm_table.anm_state = 4 -- set to bore state
+    end
+end
+animation_common.add_anim_mutator(no_reload_on_unjam, 9999)
+
+
+function on_option_change(mcm)
+	if mcm then
+		no_reload_on_unjam_mcm = ui_mcm.get("uas/no_reload_on_unjam")
+	end
+end
+
+-------
+local mcm_keybinds = ui_mcm and ui_mcm.key_hold
+function on_game_start()
+    RegisterScriptCallback("on_option_change",on_option_change)
+    on_option_change(mcm_keybinds)
+end

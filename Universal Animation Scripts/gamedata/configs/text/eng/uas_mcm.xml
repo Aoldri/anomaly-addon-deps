@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+    <string id="ui_mcm_menu_uas">
+        <text>UAS</text>
+    </string>
+
+    <string id="ui_mcm_uas">
+        <text>Universal Animation Scripts</text>
+    </string>
+
+    <string id="ui_mcm_uas_no_reload_on_unjam">
+        <text>No reload on unjam</text>
+    </string>
+
+    <string id="ui_mcm_uas_no_reload_on_unjam_desc">
+        <text>Prevents the unjam animation from also reloading the weapon. Has no effect when WPO is installed.</text>
+    </string>
+</string_table>

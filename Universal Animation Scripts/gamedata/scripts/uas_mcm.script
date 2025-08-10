@@ -1,0 +1,13 @@
+local mcm_keybinds = ui_mcm and ui_mcm.key_hold
+
+function on_mcm_load()
+    local options = {
+        id = "uas",
+        sh = true,
+        gr = {
+            {id= "uas_title",type= "slide",text="ui_mcm_uas",link= "ui_options_slider_player",size= {512,50},spacing= 20},
+            {id = "no_reload_on_unjam", type = "check", val = 1, def=false}
+        }
+    }
+    return options
+end
