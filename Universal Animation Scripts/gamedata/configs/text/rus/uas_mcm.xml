@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="windows-1251"?>
+<string_table>
+    <string id="ui_mcm_menu_uas">
+        <text>UAS</text>
+    </string>
+
+    <string id="ui_mcm_uas">
+        <text>Universal Animation Scripts</text>
+    </string>
+
+    <string id="ui_mcm_uas_no_reload_on_unjam">
+        <text>Без перезарядки при устранении замятия</text>
+    </string>
+
+    <string id="ui_mcm_uas_no_reload_on_unjam_desc">
+        <text>Предотвращает перезарядку оружия при воспроизведении анимации разблокировки. Не действует при установленной модификации WPO.</text>
+    </string>
+</string_table>
