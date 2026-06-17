@@ -1,4 +1,6 @@
 local no_reload_on_unjam_mcm = false
+local common = animation_common
+common.add_flag("clear_jam")
 
 -- Stop reloading the gun when unjamming
 local function no_reload_on_unjam(anm_table, item)
@@ -9,10 +11,20 @@ local function no_reload_on_unjam(anm_table, item)
     -- stop reload if gun has unjam animation and is unjamming vanilla
     if (string.find(anm_table.anm_name, "reload_misfire") and anm_table.anm_state == 7) then
         anm_table.anm_state = 4 -- set to bore state
+        common.set_flag("clear_jam")
     end
 end
-animation_common.add_anim_mutator(no_reload_on_unjam, 9999)
+common.add_anim_mutator(no_reload_on_unjam, 9999)
 
+---@param item game_object
+---@param section string
+local function actor_on_hud_animation_end(item, section)
+    if not common.get_flag("clear_jam") then return end
+    if (item:id() ~= db.actor:active_item():id()) then return end
+
+    item:cast_Weapon():SetMisfire(false)
+    common.remove_flag("clear_jam")
+end
 
 function on_option_change(mcm)
 	if mcm then
@@ -24,5 +36,6 @@ end
 local mcm_keybinds = ui_mcm and ui_mcm.key_hold
 function on_game_start()
     RegisterScriptCallback("on_option_change",on_option_change)
+    RegisterScriptCallback("actor_on_hud_animation_end", actor_on_hud_animation_end)
     on_option_change(mcm_keybinds)
 end
