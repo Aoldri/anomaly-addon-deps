@@ -6,7 +6,7 @@ function on_mcm_load()
         sh = true,
         gr = {
             {id= "uas_title",type= "slide",text="ui_mcm_uas",link= "ui_options_slider_player",size= {512,50},spacing= 20},
-            {id = "no_reload_on_unjam", type = "check", val = 1, def=false}
+            {id = "no_reload_on_unjam", type = "check", val = 1, def=false, precondition={function() return MODDED_EXES_VERSION < 20260426 end}}
         }
     }
     return options

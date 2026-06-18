@@ -1,3 +1,5 @@
+if MODDED_EXES_VERSION >= 20260426 then return end
+
 local no_reload_on_unjam_mcm = false
 local common = animation_common
 common.add_flag("clear_jam")
